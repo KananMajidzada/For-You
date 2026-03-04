@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For You</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            background-color: #1a1a1a; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .polaroid-wrapper {
+            transform: rotate(-2deg);
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+            transition: all 0.4s ease;
+        }
+
+        .polaroid-frame {
+            background-color: #fffdfc;
+            padding: 20px 20px 80px 20px; /* Traditional Polaroid bottom */
+            border-radius: 2px;
+            position: relative;
+            width: 85vw;
+            max-width: 320px;
+        }
+
+        canvas {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            touch-action: none;
+        }
+
+        .secret-content {
+            width: 100%;
+            aspect-ratio: 1/1; 
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            border: 1px solid #f0f0f0;
+        }
+
+        .message-container {
+            text-align: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .reveal-triggered .message-container {
+            opacity: 1;
+        }
+
+        .text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .heart-signature {
+            display: block;
+            margin-top: 25px;
+            font-family: sans-serif;
+            color: #d88a8a; /* Soft blush pink */
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="polaroid-wrapper">
+        <div class="polaroid-frame" id="polaroid">
+            <canvas id="canvas"></canvas>
+            
+            <div class="secret-content">
+                <div class="message-container">
+                    <div class="text">
+                        They say you have to wait for good things.<br>
+                        <strong>I'm glad I didn't have to wait long.</strong>
+                    </div>
+                    <span class="heart-signature">&lt;3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const polaroid = document.getElementById('polaroid');
+        let isDrawing = false;
+
+        function init() {
+            const secretContent = document.querySelector('.secret-content');
+            canvas.width = secretContent.offsetWidth;
+            canvas.height = secretContent.offsetHeight;
+
+            // Deep dark "undeveloped" look
+            ctx.fillStyle = '#222'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Texture
+            ctx.fillStyle = '#1a1a1a';
+            for(let i=0; i<2000; i++) {
+                ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, 1);
+            }
+        }
+
+        function getErasedPercentage() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            let erased = 0;
+            for (let i = 3; i < pixels.length; i += 4) {
+                if (pixels[i] === 0) erased++;
+            }
+            return erased / (canvas.width * canvas.height);
+        }
+
+        function scratch(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (getErasedPercentage() > 0.35) {
+                polaroid.classList.add('reveal-triggered');
+            }
+        }
+
+        canvas.addEventListener('mousedown', () => isDrawing = true);
+        canvas.addEventListener('touchstart', () => isDrawing = true);
+        window.addEventListener('mouseup', () => isDrawing = false);
+        window.addEventListener('touchend', () => isDrawing = false);
+        canvas.addEventListener('mousemove', scratch);
+        canvas.addEventListener('touchmove', scratch, { passive: false });
+
+        window.onload = init;
+        window.onresize = init;
+    </script>
+
+</body>
+</html>
